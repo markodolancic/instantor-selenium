@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>selenium-parent</artifactId>
+        <groupId>com.instantor.selenium</groupId>
+        <version>2.52.0.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>selenium-leg-rc</artifactId>
+    <name>selenium-leg-rc</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.instantor.selenium</groupId>
+            <artifactId>selenium-remote-driver</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- We need JUnit for SeleneseTestCase ... -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <!-- We need TestNG for SeleneseTestNgHelper ... -->
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- See http://maven.apache.org/plugins/maven-antrun-plugin -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy_resource_files</id>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <tasks>
+                                <!-- Extract *.js files from client-combined-nodeps.jar to target/classes ... -->
+                                <unjar src="../resources/webdriven/webdriven.jar" dest="target/classes">
+                                    <patternset>
+                                        <include name="**/webdriven/*.js"/>
+                                    </patternset>
+                                </unjar>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.19.1</version>
+                <configuration>
+                    <skip>true</skip>
+                    <failIfNoTests>false</failIfNoTests>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>selenium-parent</artifactId>
+        <groupId>com.instantor.selenium</groupId>
+        <version>2.52.0.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>selenium-ie-driver</artifactId>
+    <name>selenium-ie-driver</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.instantor.selenium</groupId>
+            <artifactId>selenium-remote-driver</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- See http://maven.apache.org/plugins/maven-antrun-plugin -->
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>copy_resource_files</id>
+                        <phase>generate-resources</phase>
+                        <configuration>
+                            <tasks>
+                                <!-- Extract everything but the *.class files and MANIFEST.MF from ie.jar to target/classes ... -->
+                                <unjar src="../resources/ie/ie.jar" dest="target/classes">
+                                    <patternset>
+                                        <exclude name="**/*.class"/>
+                                        <exclude name="META-INF/MANIFEST.MF"/>
+                                    </patternset>
+                                </unjar>
+                            </tasks>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

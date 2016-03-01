@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>selenium-parent</artifactId>
+        <groupId>com.instantor.selenium</groupId>
+        <version>2.52.0.1</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>selenium-support</artifactId>
+    <name>selenium-support</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.instantor.selenium</groupId>
+            <artifactId>selenium-remote-driver</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- Hamcrest is needed for the classes in the org.openqa.selenium.lift package ... -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest-all</artifactId>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+</project>
