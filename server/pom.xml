@@ -163,8 +163,8 @@
                                 <!-- Extract everything but the *.class files and MANIFEST.MF from selenium-nodeps.jar to target/temp ... -->
                                 <unjar src="../resources/selenium-nodeps.jar" dest="target/temp">
                                     <patternset>
-                                        <exclude name="**/*.class" />
-                                        <exclude name="META-INF/MANIFEST.MF" />
+                                        <exclude name="**/*.class"/>
+                                        <exclude name="META-INF/MANIFEST.MF"/>
                                     </patternset>
                                 </unjar>
                                 <!-- Copy needed resources to target/classes ... -->
@@ -172,14 +172,14 @@
                                     <fileset dir="target/temp">
                                         <not>
                                             <or>
-                                                <present targetdir="../chrome-driver/target/classes" />
-                                                <present targetdir="../edge-driver/target/classes" />
-                                                <present targetdir="../firefox-driver/target/classes" />
-                                                <present targetdir="../ie-driver/target/classes" />
-                                                <present targetdir="../java/target/classes" />
+                                                <present targetdir="../chrome-driver/target/classes"/>
+                                                <present targetdir="../edge-driver/target/classes"/>
+                                                <present targetdir="../firefox-driver/target/classes"/>
+                                                <present targetdir="../ie-driver/target/classes"/>
+                                                <present targetdir="../java/target/classes"/>
                                             </or>
                                         </not>
-                                        <exclude name="build.desc" />
+                                        <exclude name="build.desc"/>
                                     </fileset>
                                 </copy>
                             </tasks>
@@ -189,6 +189,56 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>1.10</version>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.4.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <configuration>
+                    <outputDirectory>./build</outputDirectory>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.10</version>
+                <executions>
+                    <execution>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>./build/lib</outputDirectory>
+                            <overWriteReleases>true</overWriteReleases>
+                            <overWriteSnapshots>true</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>2.7</version>
             </plugin>
         </plugins>
     </build>
