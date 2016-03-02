@@ -12,8 +12,6 @@ import java.util.stream.Collectors;
 
 /**
  * A set of RemoteProxies.
- * <p/>
- * Obeys the iteration guarantees of CopyOnWriteArraySet
  */
 @ThreadSafe
 public class ProxySet implements Iterable<RemoteProxy> {
