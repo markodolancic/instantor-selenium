@@ -6,7 +6,7 @@ import org.openqa.grid.common.exception.GridException;
 import org.openqa.selenium.remote.DesiredCapabilities;
 
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.StampedLock;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -17,13 +17,11 @@ import java.util.stream.Collectors;
  */
 @ThreadSafe
 public class ProxySet implements Iterable<RemoteProxy> {
-    private final ReentrantReadWriteLock RW_LOCK = new ReentrantReadWriteLock(true);
-    private final ReentrantReadWriteLock.ReadLock R_LOCK = RW_LOCK.readLock();
-    private final ReentrantReadWriteLock.WriteLock W_LOCK = RW_LOCK.writeLock();
+    private static final Logger log = Logger.getLogger(ProxySet.class.getName());
 
+    private final StampedLock stampedLock = new StampedLock();
     private final Set<RemoteProxy> proxies = new HashSet<>();
 
-    private static final Logger log = Logger.getLogger(ProxySet.class.getName());
     private volatile boolean throwOnCapabilityNotPresent = true;
 
     public ProxySet(boolean throwOnCapabilityNotPresent) {
@@ -34,24 +32,39 @@ public class ProxySet implements Iterable<RemoteProxy> {
      * killing the timeout detection threads.
      */
     public void teardown() {
-        R_LOCK.lock();
+        long stamp = stampedLock.readLock();
         try {
             proxies.forEach(RemoteProxy::teardown);
         } finally {
-            R_LOCK.unlock();
+            stampedLock.unlockRead(stamp);
         }
     }
 
     public boolean hasCapability(Map<String, Object> requestedCapability) {
-        R_LOCK.lock();
-        try {
-            for (RemoteProxy proxy : proxies)
-                if (proxy.hasCapability(requestedCapability))
-                    return true;
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryOptimisticRead();
+        boolean rv = false;
+
+        for (RemoteProxy proxy : proxies) {
+            if (proxy.hasCapability(requestedCapability)) {
+                rv = true;
+                break;
+            }
         }
-        return false;
+
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                for (RemoteProxy proxy : proxies) {
+                    if (proxy.hasCapability(requestedCapability)) {
+                        rv = true;
+                        break;
+                    }
+                }
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
+        }
+        return rv;
     }
 
     /**
@@ -64,7 +77,7 @@ public class ProxySet implements Iterable<RemoteProxy> {
         // Find the original proxy. While the supplied one is logically equivalent, it may be a fresh object with
         // an empty TestSlot list, which doesn't figure into the proxy equivalence check.  Since we want to free up
         // those test sessions, we need to operate on that original object.
-        W_LOCK.lock();
+        long stamp = stampedLock.writeLock();
         try {
             for (RemoteProxy p : proxies) {
                 if (p.equals(proxy)) {
@@ -73,75 +86,112 @@ public class ProxySet implements Iterable<RemoteProxy> {
                 }
             }
         } finally {
-            W_LOCK.unlock();
+            stampedLock.unlockWrite(stamp);
         }
         throw new IllegalStateException("Did not contain proxy " + proxy);
     }
 
     public void add(RemoteProxy proxy) {
-        W_LOCK.lock();
+        long stamp = stampedLock.writeLock();
         try {
             proxies.add(proxy);
         } finally {
-            W_LOCK.unlock();
+            stampedLock.unlockWrite(stamp);
         }
     }
 
     public boolean contains(RemoteProxy o) {
-        R_LOCK.lock();
-        try {
-            return proxies.contains(o);
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryOptimisticRead();
+        boolean rv = proxies.contains(o);
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                rv = proxies.contains(o);
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+        return rv;
     }
 
     public List<RemoteProxy> getBusyProxies() {
-        R_LOCK.lock();
-        try {
-            return proxies.stream()
-                    .filter(RemoteProxy::isBusy)
-                    .collect(Collectors.toList());
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryOptimisticRead();
+        List<RemoteProxy> rv = proxies.stream()
+                .filter(RemoteProxy::isBusy)
+                .collect(Collectors.toList());
+
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                rv = proxies.stream()
+                        .filter(RemoteProxy::isBusy)
+                        .collect(Collectors.toList());
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+
+        return rv;
     }
 
     public RemoteProxy getProxyById(String id) {
         if (id == null)
             return null;
 
-        R_LOCK.lock();
-        try {
-            for (RemoteProxy p : proxies) {
-                if (id.equals(p.getId())) {
-                    return p;
-                }
+        RemoteProxy rv = null;
+        long stamp = stampedLock.tryOptimisticRead();
+        for (RemoteProxy p : proxies) {
+            if (id.equals(p.getId())) {
+                rv = p;
+                break;
             }
-        } finally {
-            R_LOCK.unlock();
         }
-        return null;
+
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                for (RemoteProxy p : proxies) {
+                    if (id.equals(p.getId())) {
+                        rv = p;
+                        break;
+                    }
+                }
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
+
+        }
+        return rv;
     }
 
 
     public boolean isEmpty() {
-        R_LOCK.lock();
-        try {
-            return proxies.isEmpty();
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryOptimisticRead();
+        boolean rv = proxies.isEmpty();
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                rv = proxies.isEmpty();
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+        return rv;
     }
 
     public List<RemoteProxy> getSorted() {
-        List<RemoteProxy> sorted;
-        R_LOCK.lock();
-        try {
-            sorted = new ArrayList<>(proxies);
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryOptimisticRead();
+        List<RemoteProxy> sorted = new ArrayList<>(proxies);
+
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                sorted = new ArrayList<>(proxies);
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+
         Collections.sort(sorted, proxyComparator);
         return sorted;
     }
@@ -174,37 +224,41 @@ public class ProxySet implements Iterable<RemoteProxy> {
     }
 
     public Iterator<RemoteProxy> iterator() {
-        R_LOCK.lock();
-        try {
-            return proxies.iterator();
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryReadLock();
+        Iterator<RemoteProxy> rv = proxies.iterator();
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                rv = proxies.iterator();
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+        return rv;
     }
 
     public int size() {
-        R_LOCK.lock();
-        try {
-            return proxies.size();
-        } finally {
-            R_LOCK.unlock();
+        long stamp = stampedLock.tryReadLock();
+        int rv = proxies.size();
+        if (!stampedLock.validate(stamp)) {
+            stamp = stampedLock.readLock();
+            try {
+                rv = proxies.size();
+            } finally {
+                stampedLock.unlockRead(stamp);
+            }
         }
+        return rv;
     }
 
     public void verifyAbilityToHandleDesiredCapabilities(Map<String, Object> desiredCapabilities) {
-        R_LOCK.lock();
-        try {
-            if (proxies.isEmpty()) {
-                if (throwOnCapabilityNotPresent) {
-                    throw new GridException("Empty pool of VM for setup " + new DesiredCapabilities(desiredCapabilities));
-                } else {
-                    log.warning("Empty pool of nodes.");
-                }
+        if (isEmpty()) {
+            if (throwOnCapabilityNotPresent) {
+                throw new GridException("Empty pool of VM for setup " + new DesiredCapabilities(desiredCapabilities));
+            } else {
+                log.warning("Empty pool of nodes.");
             }
-        } finally {
-            R_LOCK.unlock();
         }
-
         if (!hasCapability(desiredCapabilities)) {
             if (throwOnCapabilityNotPresent) {
                 throw new CapabilityNotPresentOnTheGridException(desiredCapabilities);
