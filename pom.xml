@@ -139,7 +139,7 @@
                     <configuration>
                         <filesets>
                             <fileset>
-                                <directory>build</directory>
+                                <directory>./package</directory>
                             </fileset>
                         </filesets>
                     </configuration>

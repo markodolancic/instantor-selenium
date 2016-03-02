@@ -151,6 +151,17 @@
 
     <build>
         <plugins>
+            <plugin>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>3.0.0</version>
+                <configuration>
+                    <filesets>
+                        <fileset>
+                            <directory>build</directory>
+                        </fileset>
+                    </filesets>
+                </configuration>
+            </plugin>
             <!-- See http://maven.apache.org/plugins/maven-antrun-plugin -->
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
